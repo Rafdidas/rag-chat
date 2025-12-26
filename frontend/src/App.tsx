@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import './App.css';
 
 type Role = "user" | "assistant";
@@ -18,6 +18,7 @@ function App() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const askAi = async () => {
     const question = input.trim();
@@ -73,6 +74,10 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   return (
     <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
       <h1 style={{ marginBottom: 16 }}>AI 채팅 테스트</h1>
@@ -112,10 +117,23 @@ function App() {
                   lineHeight: 1.5,
                 }}
               >
-                <div style={{ fontSize: 12, color: "#888", marginBottom: 4 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#888",
+                    marginBottom: 4,
+                    textAlign: m.role === "user" ? "right" : "left",
+                  }}
+                >
                   {m.role === "user" ? "나" : "AI"}
                 </div>
-                <div>{m.content}</div>
+                <div
+                  style={{
+                    textAlign: m.role === "user" ? "right" : "left",
+                  }}
+                >
+                  {m.content}
+                </div>
               </div>
             </div>
           ))
@@ -124,17 +142,26 @@ function App() {
         {loading && (
           <div style={{ color: "#666", marginTop: 8 }}>AI가 답변을 작성 중...</div>
         )}
+        <div ref={bottomRef} />
       </div>
 
       {/* 입력 영역 */}
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <input
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="질문을 입력하세요"
-          style={{ flex: 1, padding: 10 }}
+          rows={2}
+          style={{
+            flex: 1,
+            padding: 10,
+            resize: "none",
+          }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") askAi();
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault(); // 줄바꿈 막기
+              askAi();
+            }
           }}
         />
         <button onClick={askAi} disabled={loading || !input.trim()}>
