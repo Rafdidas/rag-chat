@@ -74,13 +74,76 @@ function App() {
     }
   };
 
+  const askAiStream = async () => {
+    const question = input.trim();
+    if (!question || loading) return;
+
+    const userMsg: ChatMessage = {
+      id: uid(),
+      role: "user",
+      content: question,
+      createdAt: Date.now(),
+    };
+
+    const aiMsgId = uid();
+    const aiMsg: ChatMessage = {
+      id: aiMsgId,
+      role: "assistant",
+      content: "",
+      createdAt: Date.now(),
+    };
+
+    setMessages((prev) => [...prev, userMsg, aiMsg]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/ask/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`서버 오류: ${res.status} ${text}`);
+      }
+
+      if (!res.body) throw new Error("스트림을 읽을 수 없습니다.");
+      
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+
+        setMessages((prev) =>
+          prev.map((m) => (m.id === aiMsgId ? { ...m, content: m.content + chunk } : m))
+        );
+      }
+    } catch (e: any) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiMsgId
+            ? { ...m, content: `오류가 발생했습니다: ${e?.message ?? "알 수 없음"}` }
+            : m
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
     <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
-      <h1 style={{ marginBottom: 16 }}>AI 채팅 테스트</h1>
+      {/* <h1 style={{ marginBottom: 16 }}>AI 채팅 테스트</h1> */}
 
       {/* 채팅 영역 */}
       <div
@@ -88,6 +151,7 @@ function App() {
           border: "1px solid #ddd",
           borderRadius: 12,
           padding: 12,
+          minWidth:500,
           minHeight: 360,
           maxHeight: 520,
           overflow: "auto",
@@ -160,11 +224,11 @@ function App() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault(); // 줄바꿈 막기
-              askAi();
+              askAiStream();
             }
           }}
         />
-        <button onClick={askAi} disabled={loading || !input.trim()}>
+        <button onClick={askAiStream} disabled={loading || !input.trim()}>
           {loading ? "전송 중..." : "전송"}
         </button>
       </div>
