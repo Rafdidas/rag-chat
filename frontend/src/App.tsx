@@ -19,64 +19,68 @@ function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const streamingMsgIdRef = useRef<string | null>(null);
 
-  const askAi = async () => {
-    const question = input.trim();
-    if (!question || loading) return;
+  // const askAi = async () => {
+  //   const question = input.trim();
+  //   if (!question || loading) return;
 
-    // 1) 사용자 메시지 먼저 추가(즉시 화면에 보이게)
-    const userMsg: ChatMessage = {
-      id: uid(),
-      role: "user",
-      content: question,
-      createdAt: Date.now(),
-    };
+  //   // 1) 사용자 메시지 먼저 추가(즉시 화면에 보이게)
+  //   const userMsg: ChatMessage = {
+  //     id: uid(),
+  //     role: "user",
+  //     content: question,
+  //     createdAt: Date.now(),
+  //   };
 
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setLoading(true);
+  //   setMessages((prev) => [...prev, userMsg]);
+  //   setInput("");
+  //   setLoading(true);
 
-    try {
-      // 2) 백엔드 호출
-      const res = await fetch("/api/ask", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ question }),
-      });
+  //   try {
+  //     // 2) 백엔드 호출
+  //     const res = await fetch("/api/ask", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ question }),
+  //     });
 
-      if (!res.ok) {
-        throw new Error(`서버 오류: ${res.status}`);
-      }
+  //     if (!res.ok) {
+  //       throw new Error(`서버 오류: ${res.status}`);
+  //     }
 
-      const data: { answer?: string } = await res.json();
+  //     const data: { answer?: string } = await res.json();
 
-      // 3) AI 메시지 추가
-      const aiMsg: ChatMessage = {
-        id: uid(),
-        role: "assistant",
-        content: data.answer ?? "(답변이 비어있습니다.)",
-        createdAt: Date.now(),
-      };
+  //     // 3) AI 메시지 추가
+  //     const aiMsg: ChatMessage = {
+  //       id: uid(),
+  //       role: "assistant",
+  //       content: data.answer ?? "(답변이 비어있습니다.)",
+  //       createdAt: Date.now(),
+  //     };
       
-      setMessages((prev) => [...prev, aiMsg]);
-    } catch (e: any) {
-      const errMsg: ChatMessage = {
-        id: uid(),
-        role: "assistant",
-        content: `오류가 발생했습니다. ${e?.message ?? "알 수 없음"}`,
-        createdAt: Date.now(),
-      };
-      setMessages((prev) => [...prev, errMsg]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     setMessages((prev) => [...prev, aiMsg]);
+  //   } catch (e: any) {
+  //     const errMsg: ChatMessage = {
+  //       id: uid(),
+  //       role: "assistant",
+  //       content: `오류가 발생했습니다. ${e?.message ?? "알 수 없음"}`,
+  //       createdAt: Date.now(),
+  //     };
+  //     setMessages((prev) => [...prev, errMsg]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const askAiStream = async () => {
     const question = input.trim();
     if (!question || loading) return;
+
+    abortRef.current?.abort();
 
     const userMsg: ChatMessage = {
       id: uid(),
@@ -97,11 +101,16 @@ function App() {
     setInput("");
     setLoading(true);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+    streamingMsgIdRef.current = aiMsgId;
+
     try {
       const res = await fetch("/api/ask/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -125,6 +134,16 @@ function App() {
         );
       }
     } catch (e: any) {
+      // 사용자가 '중단'을 누른 경우: 오류가 아니라 정상 흐름으로 처리
+      if (e?.name === "AbortError") {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMsgId ? { ...m, content: m.content + "\n\n(중단됨)" } : m
+          )
+        );
+        return;
+      }
+
       setMessages((prev) =>
         prev.map((m) =>
           m.id === aiMsgId
@@ -134,8 +153,19 @@ function App() {
       );
     } finally {
       setLoading(false);
+
+      // 정리(현재 요청이 끝났으니 controller/ref 비우기)
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        streamingMsgIdRef.current = null;
+      }
     }
   };
+
+  const stopStream = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -151,7 +181,7 @@ function App() {
           border: "1px solid #ddd",
           borderRadius: 12,
           padding: 12,
-          minWidth:500,
+          minWidth: 500,
           minHeight: 360,
           maxHeight: 520,
           overflow: "auto",
@@ -230,6 +260,9 @@ function App() {
         />
         <button onClick={askAiStream} disabled={loading || !input.trim()}>
           {loading ? "전송 중..." : "전송"}
+        </button>
+        <button type="button" onClick={stopStream} disabled={!loading}>
+          중단
         </button>
       </div>
     </div>
