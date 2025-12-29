@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 import './App.css';
 
 type Role = "user" | "assistant";
@@ -222,11 +225,12 @@ function App() {
                   {m.role === "user" ? "나" : "AI"}
                 </div>
                 <div
+                  className="markdown"
                   style={{
                     textAlign: m.role === "user" ? "right" : "left",
                   }}
                 >
-                  {m.content}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                 </div>
               </div>
             </div>

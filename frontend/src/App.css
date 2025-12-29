@@ -48,3 +48,25 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Markdown 기본 스타일 */
+.markdown pre {
+  padding: 12px;
+  border-radius: 8px;
+  overflow: auto;
+  background: #f3f3f3;
+}
+
+.markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.markdown p {
+  margin: 0 0 8px;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 20px;
+  margin: 0 0 8px;
+}
