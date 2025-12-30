@@ -7,66 +7,27 @@
 }
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  min-width: 1280px;
+  min-height: 100dvh;
+  background: #fff;
+}
+#root::before {
+  content: "";
+  position: absolute;
+  inset: 0px;
+  background:
+    radial-gradient(600px 400px at 45% 55%, rgba(180, 120, 255, 0.45), transparent 60%),
+    radial-gradient(700px 500px at 35% 70%, rgba(255, 140, 200, 0.40), transparent 60%),
+    radial-gradient(900px 600px at 55% 80%, rgba(120, 200, 255, 0.30), transparent 60%);
+  filter: blur(30px);
+  opacity: 0.9;
+  pointer-events: none;
+}
+#root > * {
+  position: relative;
+  /* 내용이 배경 위로 올라오게 */
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-/* Markdown 기본 스타일 */
-.markdown pre {
-  padding: 12px;
-  border-radius: 8px;
-  overflow: auto;
-  background: #f3f3f3;
-}
-
-.markdown code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.markdown p {
-  margin: 0 0 8px;
-}
-
-.markdown ul,
-.markdown ol {
-  padding-left: 20px;
-  margin: 0 0 8px;
-}

@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import './App.css';
+import './css/chat.css';
 
 type Role = "user" | "assistant";
 
@@ -175,86 +176,59 @@ function App() {
   }, [messages]);
 
   return (
-    <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
-      {/* <h1 style={{ marginBottom: 16 }}>AI 채팅 테스트</h1> */}
-
+    <div className="chat-wrap">
+      {/* <h1 className="main-title">🚀</h1> */}
       {/* 채팅 영역 */}
-      <div
-        style={{
-          border: "1px solid #ddd",
-          borderRadius: 12,
-          padding: 12,
-          minWidth: 500,
-          minHeight: 360,
-          maxHeight: 520,
-          overflow: "auto",
-          background: "#fafafa",
-        }}
-      >
-        {messages.length === 0 ? (
-          <div style={{ color: "#666" }}>첫 질문을 입력해보세요.</div>
-        ) : (
-          messages.map((m) => (
-            <div
-              key={m.id}
-              style={{
-                display: "flex",
-                justifyContent: m.role === "user" ? "flex-end" : "flex-start",
-                marginBottom: 10,
-              }}
-            >
+      <div className={`chat-area ${messages.length === 0 && "chat-area--empty"}`}>
+        <div className="chat-area--inner">
+          {messages.length === 0 ? (
+            <div className="empty-message">첫 질문을 입력해보세요.</div>
+          ) : (
+            messages.map((m) => (
               <div
+                className="chat-message"
+                key={m.id}
                 style={{
-                  maxWidth: "80%",
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid #e3e3e3",
-                  background: m.role === "user" ? "white" : "#fff",
-                  whiteSpace: "pre-wrap",
-                  lineHeight: 1.5,
+                  justifyContent: m.role === "user" ? "flex-end" : "flex-start",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#888",
-                    marginBottom: 4,
-                    textAlign: m.role === "user" ? "right" : "left",
-                  }}
-                >
-                  {m.role === "user" ? "나" : "AI"}
-                </div>
-                <div
-                  className="markdown"
-                  style={{
-                    textAlign: m.role === "user" ? "right" : "left",
-                  }}
-                >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                <div className="chat-message--card">
+                  <div
+                    className="chat-message--user"
+                    style={{
+                      textAlign: m.role === "user" ? "right" : "left",
+                    }}
+                  >
+                    {m.role === "user" ? "😊" : "🤖"}
+                  </div>
+                  <div
+                    className="markdown"
+                    style={{
+                      textAlign: m.role === "user" ? "right" : "left",
+                    }}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                  </div>
                 </div>
               </div>
+            ))
+          )}
+          {loading && (
+            <div className="loading" style={{ color: "#666", marginTop: 8 }}>
+              AI가 답변을 작성 중...
             </div>
-          ))
-        )}
-
-        {loading && (
-          <div style={{ color: "#666", marginTop: 8 }}>AI가 답변을 작성 중...</div>
-        )}
+          )}
+        </div>
         <div ref={bottomRef} />
       </div>
 
       {/* 입력 영역 */}
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+      <div className="chat-input">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="질문을 입력하세요"
           rows={2}
-          style={{
-            flex: 1,
-            padding: 10,
-            resize: "none",
-          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault(); // 줄바꿈 막기
@@ -262,10 +236,19 @@ function App() {
             }
           }}
         />
-        <button onClick={askAiStream} disabled={loading || !input.trim()}>
+        <button
+          className="chat-button"
+          onClick={askAiStream}
+          disabled={loading || !input.trim()}
+        >
           {loading ? "전송 중..." : "전송"}
         </button>
-        <button type="button" onClick={stopStream} disabled={!loading}>
+        <button
+          className="chat-button"
+          type="button"
+          onClick={stopStream}
+          disabled={!loading}
+        >
           중단
         </button>
       </div>

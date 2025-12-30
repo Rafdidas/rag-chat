@@ -1,0 +1,146 @@
+/* chat */
+.chat-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  width: 100%;
+  height: 100dvh;
+  padding: 30px 0;
+}
+
+.chat-wrap .main-title {
+  margin: 5px auto;
+  background-color: transparent;
+  font-size: 50px;
+  text-align: center;
+}
+
+.chat-wrap .chat-area {
+  overflow: auto;
+  width: 100%;
+  height: 100dvh;
+  border-radius: 6px;
+}
+
+.chat-wrap .chat-area--inner {
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 30px 0;
+}
+
+.chat-wrap .chat-area--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.chat-wrap .chat-area .chat-message {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.chat-wrap .chat-area .chat-message .chat-message--card {
+  max-width: 80%;
+  padding: 10px 12px;
+
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 8px 4px rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-input>textarea::before,
+.chat-wrap .chat-area .chat-message .chat-message--card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.8),
+      transparent);
+}
+
+.chat-input>textarea::after,
+.chat-wrap .chat-area .chat-message .chat-message--card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.8),
+      transparent,
+      rgba(255, 255, 255, 0.3));
+}
+
+.chat-wrap .chat-area .chat-message .chat-message--user {
+  margin-bottom: 10px;
+  color: #888;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.chat-input {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 10px 0 0;
+}
+
+.chat-input > textarea {
+  flex: 1;
+  padding: 10px;
+  resize: none;
+
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 8px 4px rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+
+  outline: none;
+}
+
+/* Markdown 기본 스타일 */
+.markdown pre {
+  padding: 12px;
+  border-radius: 8px;
+  overflow: auto;
+  background: #f3f3f3;
+}
+
+.markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.markdown p {
+  margin: 0 0 8px;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 20px;
+  margin: 0 0 8px;
+}
