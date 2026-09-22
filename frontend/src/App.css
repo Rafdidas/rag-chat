@@ -1,33 +1,39 @@
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
-  font-family: Pretendard, sans-serif;
-  line-height: 1.5;
 }
 
+html,
+body,
 #root {
-  overflow: hidden;
-  position: relative;
   width: 100%;
-  min-width: 1280px;
-  min-height: 100dvh;
-  background: #fff;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
 }
-#root::before {
-  content: "";
+
+body {
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+.sr-only {
   position: absolute;
-  inset: 0px;
-  background:
-    radial-gradient(600px 400px at 45% 55%, rgba(180, 120, 255, 0.45), transparent 60%),
-    radial-gradient(700px 500px at 35% 70%, rgba(255, 140, 200, 0.40), transparent 60%),
-    radial-gradient(900px 600px at 55% 80%, rgba(120, 200, 255, 0.30), transparent 60%);
-  filter: blur(30px);
-  opacity: 0.9;
-  pointer-events: none;
-}
-#root > * {
-  position: relative;
-  /* 내용이 배경 위로 올라오게 */
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
