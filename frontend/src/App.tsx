@@ -1,11 +1,13 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Bot, CircleStop, Send, Sparkles, UserRound } from "lucide-react";
+import { Bot, CircleStop, Files, LockKeyhole, LogOut, Send, Sparkles, UserRound } from "lucide-react";
 import "highlight.js/styles/github-dark.css";
 
 import "./App.css";
 import "./css/chat.css";
 import { MarkdownContent } from "./components/MarkdownContent";
+import { DocumentPanel } from "./components/DocumentPanel";
+import { streamAnswer, verifyCode, type Source } from "./lib/api";
 
 const ShaderBackdrop = lazy(() =>
   import("./components/ShaderBackdrop").then((module) => ({
@@ -20,6 +22,7 @@ type ChatMessage = {
   role: Role;
   content: string;
   createdAt: number;
+  sources?: Source[];
 };
 
 function uid() {
@@ -34,12 +37,55 @@ function App() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [accessCode, setAccessCode] = useState(() => sessionStorage.getItem("rag-access-code") || "");
+  const [codeInput, setCodeInput] = useState("");
+  const [authenticated, setAuthenticated] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  useEffect(() => {
+    if (!accessCode) return;
+    void verifyCode(accessCode).then(() => setAuthenticated(true)).catch(() => {
+      sessionStorage.removeItem("rag-access-code");
+      setAccessCode("");
+      setAuthenticated(false);
+    });
+  }, [accessCode]);
+
+  const unlock = async (event: FormEvent) => {
+    event.preventDefault();
+    const code = codeInput.trim();
+    if (!code) return;
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      await verifyCode(code);
+      sessionStorage.setItem("rag-access-code", code);
+      setAccessCode(code);
+      setAuthenticated(true);
+      setCodeInput("");
+    } catch (error) {
+      setAuthError(getErrorMessage(error));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const logout = () => {
+    abortRef.current?.abort();
+    sessionStorage.removeItem("rag-access-code");
+    setAccessCode("");
+    setAuthenticated(false);
+    setDocumentsOpen(false);
+    setMessages([]);
+  };
+
   const askAiStream = async () => {
     const question = input.trim();
-    if (!question || loading) return;
+    if (!question || loading || !authenticated) return;
 
     abortRef.current?.abort();
 
@@ -57,36 +103,15 @@ function App() {
     abortRef.current = controller;
 
     try {
-      const response = await fetch("/api/ask/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
-        signal: controller.signal,
+      await streamAnswer(accessCode, question, controller.signal, (event) => {
+        if (event.event === "done") return;
+        setMessages((previous) => previous.map((message) => {
+          if (message.id !== aiMsgId) return message;
+          if (event.event === "sources") return { ...message, sources: event.sources };
+          if (event.event === "delta") return { ...message, content: message.content + event.text };
+          return { ...message, content: `${message.content}\n\n_${event.message}_` };
+        }));
       });
-
-      if (!response.ok) {
-        const details = await response.text().catch(() => "");
-        throw new Error(`서버 오류: ${response.status}${details ? ` ${details}` : ""}`);
-      }
-
-      if (!response.body) throw new Error("스트림을 읽을 수 없습니다.");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        setMessages((previous) =>
-          previous.map((message) =>
-            message.id === aiMsgId
-              ? { ...message, content: message.content + chunk }
-              : message,
-          ),
-        );
-      }
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === "AbortError") {
         setMessages((previous) =>
@@ -102,7 +127,7 @@ function App() {
       setMessages((previous) =>
         previous.map((message) =>
           message.id === aiMsgId
-            ? { ...message, content: `오류가 발생했습니다: ${getErrorMessage(error)}` }
+            ? { ...message, content: `${message.content}\n\n오류가 발생했습니다: ${getErrorMessage(error)}` }
             : message,
         ),
       );
@@ -137,9 +162,9 @@ function App() {
           <span className="brand__mark"><Sparkles size={17} /></span>
           <span>RAG LAB</span>
         </div>
-        <div className="live-status">
-          <span className="live-status__dot" />
-          실시간 응답
+        <div className="header-actions">
+          {authenticated && <><button type="button" onClick={() => setDocumentsOpen((open) => !open)}><Files size={16} /> 문서</button><button type="button" onClick={logout} aria-label="잠금"><LogOut size={16} /></button></>}
+          <div className="live-status"><span className="live-status__dot" /> {authenticated ? "연결됨" : "PRIVATE DEMO"}</div>
         </div>
       </header>
 
@@ -154,7 +179,7 @@ function App() {
             >
               <span className="empty-state__icon"><Sparkles size={24} /></span>
               <h1>문서와 대화하세요</h1>
-              <p>질문을 입력하면 AI가 답변을 실시간으로 작성합니다.</p>
+              <p>내 문서를 바탕으로 검색하고, 근거를 확인하며 답변을 받으세요.</p>
             </motion.div>
           ) : (
             <div className="message-list">
@@ -178,6 +203,9 @@ function App() {
                           <i /><i /><i />
                         </span>
                       )}
+                      {message.role === "assistant" && message.sources && message.sources.length > 0 && (
+                        <div className="message__sources"><span>참고한 문서</span>{message.sources.map((source, index) => <details key={`${source.file_id}-${index}`}><summary>[{index + 1}] {source.name}</summary><p>{source.excerpt}</p></details>)}</div>
+                      )}
                     </div>
                   </motion.article>
                 ))}
@@ -193,7 +221,8 @@ function App() {
             id="chat-input"
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder="질문을 입력하세요"
+            placeholder={authenticated ? "문서에 대해 질문하세요" : "접근 코드를 먼저 입력하세요"}
+            disabled={!authenticated}
             rows={1}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
@@ -223,7 +252,7 @@ function App() {
                 key="send"
                 className="composer__action"
                 type="submit"
-                disabled={!input.trim()}
+                disabled={!input.trim() || !authenticated}
                 aria-label="메시지 전송"
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -235,6 +264,8 @@ function App() {
           </AnimatePresence>
         </form>
       </main>
+      {authenticated && <DocumentPanel code={accessCode} open={documentsOpen} onClose={() => setDocumentsOpen(false)} />}
+      {!authenticated && <div className="access-overlay"><form className="access-card" onSubmit={(event) => void unlock(event)}><span className="access-card__icon"><LockKeyhole size={22} /></span><span className="eyebrow">PRIVATE PORTFOLIO DEMO</span><h2>RAG LAB에 입장하기</h2><p>개인 문서와 AI 사용량을 보호하기 위해 접근 코드가 필요합니다.</p><label htmlFor="access-code">접근 코드</label><input id="access-code" type="password" autoComplete="off" value={codeInput} onChange={(event) => setCodeInput(event.target.value)} placeholder="접근 코드를 입력하세요" /><button type="submit" disabled={authBusy || !codeInput.trim()}>{authBusy ? "확인 중…" : "입장하기"}</button>{authError && <span role="alert" className="panel-error">{authError}</span>}</form></div>}
     </div>
   );
 }

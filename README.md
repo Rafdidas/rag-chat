@@ -1,60 +1,36 @@
-# AI Chat Application (React + FastAPI)
+# RAG LAB
 
-문서 기반 AI 챗봇 구현을 목표로 한 풀스택 학습 프로젝트입니다.
-React(Vite)와 FastAPI를 기반으로, 프론트엔드–백엔드–AI API를 연결하는 전체 흐름을 직접 구현했습니다.
+개인 포트폴리오용 문서 기반 AI 채팅 앱입니다. React/Vite 프런트엔드와 FastAPI API를 한 Vercel 프로젝트에 배포합니다.
 
-현재 단계에서는 대화형 채팅 UI와 AI 질의응답 API 연동까지 완료했으며,
-추후 문서 업로드 기반 RAG(Retrieval-Augmented Generation) 구조로 확장할 예정입니다.
+## 기능
 
-### ✨주요 기능
+- PDF/TXT/MD 업로드(파일당 최대 4MB), 처리 상태 확인, 삭제
+- OpenAI vector store 검색 → 검색된 발췌문에 근거한 스트리밍 답변
+- 답변에 사용한 출처와 발췌문 표시, 근거가 없을 때 답변 보류
+- 서버 측 접근 코드 보호. OpenAI 키와 vector store ID는 브라우저에 전달하지 않음
+- 다크 채팅 UI, 모바일 레이아웃, 모션/셰이더 배경
 
-##### 대화형 AI 채팅 UI
-* 사용자 / AI 메시지 구분 렌더링
-* 대화 기록 누적 표시
-* 자동 스크롤 처리
-* Enter 전송 / Shift+Enter 줄바꿈 지원
+## 로컬 실행
 
-##### AI 질의응답 API
-* FastAPI 기반 REST API (POST /ask)
-* OpenAI API 연동
-* 질문을 서버에서 처리하여 API Key 노출 방지
+Python 3.12 이상과 Node.js가 필요합니다.
 
-##### 개발 환경 최적화
-* Vite proxy를 활용한 CORS 문제 해결
-* 프론트엔드와 백엔드 완전 분리 구조
+1. `python -m pip install -r requirements-dev.txt`
+2. `.env.example`을 참고하여 `backend/.env`에 `OPENAI_API_KEY`와 `APP_ACCESS_CODE`를 설정합니다. `backend/.env`는 Git에서 제외됩니다.
+3. `python -m backend.create_vector_store`를 한 번 실행한 뒤 출력된 `OPENAI_VECTOR_STORE_ID`를 `backend/.env`에 추가합니다. 이 단계는 OpenAI 계정에 실제 vector store를 생성합니다.
+4. `python -m uvicorn api.index:app --reload --port 8000`
+5. 다른 터미널에서 `npm ci --prefix frontend`와 `npm run dev --prefix frontend` 실행. Vite 개발 서버의 주소로 접속합니다.
 
-### 🛠️ 기술 스택
-##### Frontend
-* React
-* TypeScript
-* Vite
+## 테스트
 
-##### Backend
-* Python
-* FastAPI
-
-##### AI
-* OpenAI API
-
-### 🏗️ 프로젝트 구조
-```
-rag-chatbot/
-├─ frontend/        # React (Vite)
-│  └─ src/
-│     └─ App.tsx
-├─ backend/         # FastAPI
-│  ├─ step2_ask_ai.py
-│  ├─ step3_api.py
-│  └─ .env
-
+```bash
+python -m unittest discover -s backend/tests -v
+npm test --prefix frontend
+npm run lint --prefix frontend
+npm run build --prefix frontend
 ```
 
-### 🎯 프로젝트 목표
-* AI API를 단순히 호출하는 것을 넘어
-* 실제 서비스 구조에서 AI 기능을 어떻게 사용하는지를 이해
-* 프론트엔드 관점에서 AI UX(응답 흐름, 체감 속도, 입력 경험) 개선
-* 향후 문서 기반 RAG 챗봇으로 확장 가능한 구조 설계
+## Vercel 배포
 
-### 🔖 참고
-본 프로젝트는 학습 목적의 개인 프로젝트이며,
-AI 기능을 실제 서비스에 적용하는 과정을 단계별로 구현하는 데 초점을 두었습니다.
+프로젝트 루트를 Vercel에 연결하고 `OPENAI_API_KEY`, `OPENAI_VECTOR_STORE_ID`, `APP_ACCESS_CODE`를 환경 변수로 등록합니다. 이후 Preview 배포에서 로그인, 문서 업로드, 처리 완료, 질문/출처 표시를 확인하고 Production으로 배포합니다. `backend/.env`를 배포하거나 `VITE_` 접두사가 붙은 변수에 비밀값을 넣지 마세요.
+
+배포 구성은 루트의 `vercel.json`, Python 진입점은 `api/index.py`입니다. 단일 개인용 접근 코드 방식이라 여러 사용자별 문서 분리는 제공하지 않습니다. 공개 포트폴리오에서 체험을 허용하려면 코드 공유 범위와 OpenAI 사용량을 직접 관리해야 합니다.
