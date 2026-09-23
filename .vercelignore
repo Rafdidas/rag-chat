@@ -1,4 +1,7 @@
 backend/.env
+.env.local
+.vercel/
+/package-lock.json
 **/__pycache__/
 *.pyc
 backend/tests/
